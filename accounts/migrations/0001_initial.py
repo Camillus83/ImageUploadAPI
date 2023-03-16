@@ -5,14 +5,35 @@ import django.contrib.auth.validators
 from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
+from accounts.models import Role
 
+def create_roles(apps, schema_editor):
+    basic_role = Role.objects.create(
+        name="Basic", thumbnail_size=200, allow_original=False, allow_expiring=False
+    )
+    premium_role = Role.objects.create(
+        name="Premium", thumbnail_size=400, allow_original=True, allow_expiring=False
+    )
+    enterprise_role = Role.objects.create(
+        name="Enterprise", thumbnail_size=400, allow_original=True, allow_expiring=True
+    )
+    custom_role = Role.objects.create(
+        name="firstcustomrole",
+        thumbnail_size=600,
+        allow_original=False,
+        allow_expiring=False,
+    )
+    basic_role.save()
+    premium_role.save()
+    enterprise_role.save()
+    custom_role.save()
 
 class Migration(migrations.Migration):
 
     initial = True
 
     dependencies = [
-        ("auth", "0012_alter_user_first_name_max_length"),
+        #("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
@@ -34,6 +55,7 @@ class Migration(migrations.Migration):
                 ("allow_expiring", models.BooleanField(default=False)),
             ],
         ),
+        migrations.RunPython(create_roles),
         migrations.CreateModel(
             name="CustomUser",
             fields=[

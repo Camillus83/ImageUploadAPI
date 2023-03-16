@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
-        fields = ["image_url"]
+        fields = ["image_url", "image_file"]
 
 
 class ThumbnailSerializer(serializers.ModelSerializer):

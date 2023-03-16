@@ -21,6 +21,12 @@ from .serializers import UserSerializer, ImageSerializer, ThumbnailSerializer
 from .utils import create_thumbnail
 from datetime import datetime, timedelta
 
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.contrib.auth.decorators import login_required
+
 
 def image_preview_view(request, random_id):
     """
@@ -162,20 +168,98 @@ def image_view(request, id):
     return Response(response_data)
 
 
-@login_required
-@api_view(["POST", "GET"])
-@parser_classes([MultiPartParser, FormParser])
-def images_view(request):
-    """
-    A view to create or retrieve user images.
+# @login_required
+# @api_view(["POST", "GET"])
+# @parser_classes([MultiPartParser, FormParser])
+# def images_view(request):
+#     """
+#     A view to create or retrieve user images.
 
-    Args:
-        request (Request): Django HTTP Request object.
-    Returns:
-        Response: Response with data about urls.
-    """
-    if request.method == "POST":
-        image_file = request.data.get("image")
+#     Args:
+#         request (Request): Django HTTP Request object.
+#     Returns:
+#         Response: Response with data about urls.
+#     """
+#     if request.method == "POST":
+#         serializer = ImageSerializer(data=request.data)
+#         serializer.is_valid(raise_exception =True)
+#         serializer.save(owner=request.user)
+#         image_file = request.data.get("image")
+#         user = request.user
+
+#         filename, extension = os.path.splitext(image_file.name)
+#         new_filename = f"{filename}_{user.username}{extension}"
+
+#         if Image.objects.filter(file_name=image_file.name).exists():
+#             raise ValidationError("Image with the same name field already exists.")
+
+#         if not (
+#             image_file.content_type == "image/jpeg"
+#             or image_file.content_type == "image/png"
+#         ):
+#             raise ValidationError("Only JPEG and PNG image formats are supported.")
+
+#         image = Image(image_file=image_file, owner=user, file_name=new_filename)
+#         image.save()
+
+#         thumbnail_sizes = {
+#             "Basic": [Role.objects.get(name="Basic").thumbnail_size],
+#             "Premium": [
+#                 Role.objects.get(name="Basic").thumbnail_size,
+#                 Role.objects.get(name="Premium").thumbnail_size,
+#             ],
+#             "Enterprise": [
+#                 Role.objects.get(name="Basic").thumbnail_size,
+#                 Role.objects.get(name="Premium").thumbnail_size,
+#             ],
+#         }
+
+#         if user.role.name not in ["Basic", "Premium", "Enterprise"]:
+#             thumbnail_sizes[user.role.name] = [user.role.thumbnail_size]
+
+#         thumbnail_data = {}
+#         for size in thumbnail_sizes[user.role.name]:
+#             thumbnail = create_thumbnail(image, size)
+#             thumbnail_data[f"{size}px_thumbnail"] = ThumbnailSerializer(thumbnail).data
+
+#         if user.role.name == "Enterprise" or user.role.allow_original:
+#             thumbnail_data["original_image"] = ImageSerializer(image).data
+
+#         return Response(thumbnail_data)
+#     elif request.method == "GET":
+#         user = request.user
+#         images = Image.objects.filter(owner=user)
+#         response_data = {}
+#         for i, image in enumerate(images, start=1):
+
+#             thumbnail_data = {}
+#             thumbnails = image.thumbnails.all()
+#             for thumbnail in thumbnails:
+#                 thumbnail_data[f"{thumbnail.height}px_url"] = thumbnail.url
+#             if user.role.allow_original:
+#                 original_url = image.image_url
+#             else:
+#                 original_url = None
+#             response_data[f"image{i}"] = {
+#                 "image_id": image.pk,
+#                 "filename": image.file_name,
+#                 "original_url": original_url,
+#                 "thumbnails": thumbnail_data,
+#             }
+#         return Response(response_data)
+
+
+class ImageUploadView(generics.ListCreateAPIView):
+    parser_classes = (MultiPartParser, FormParser)
+    serializer_class = ImageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        #serializer = ImageSerializer(data=request.data)
+        #serializer.is_valid(raise_exception=True)
+        #serializer.save(owner=request.user)
+        image_file = request.FILES.get("image_file")
+
         user = request.user
 
         filename, extension = os.path.splitext(image_file.name)
@@ -190,7 +274,9 @@ def images_view(request):
         ):
             raise ValidationError("Only JPEG and PNG image formats are supported.")
 
-        image = Image(image_file=image_file, owner=user, file_name=new_filename)
+        image = Image(
+            image_file=image_file, owner=user, file_name=new_filename
+        )
         image.save()
 
         thumbnail_sizes = {
@@ -217,7 +303,8 @@ def images_view(request):
             thumbnail_data["original_image"] = ImageSerializer(image).data
 
         return Response(thumbnail_data)
-    elif request.method == "GET":
+
+    def get(self, request, *args, **kwargs):
         user = request.user
         images = Image.objects.filter(owner=user)
         response_data = {}
@@ -244,3 +331,5 @@ class UserViewSet(generics.ListAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+

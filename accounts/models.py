@@ -42,5 +42,5 @@ class CustomUser(AbstractUser):
     role = models.ForeignKey(
         Role,
         on_delete=models.PROTECT,
-        default=Role.objects.get(name="Basic").id,
+        default=Role.objects.get(name="Basic")
     )
