@@ -54,3 +54,14 @@ class Thumbnail(models.Model):
         current_site = "127.0.0.1:8000/api/v1"
         self.url = f"http://{current_site}/tmb/{uuid.uuid1()}"
         super().save(*args, **kwargs)
+
+
+class ExpiringImage(models.Model):
+    image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="images")
+    expire_time = models.DateTimeField()
+    url = models.URLField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        current_site = "127.0.0.1:8000/api/v1"
+        self.url = f"http://{current_site}/exp/{uuid.uuid1()}"
+        super().save(*args, **kwargs)
