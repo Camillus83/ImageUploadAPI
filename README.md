@@ -9,7 +9,7 @@ To run the application:
 1. Clone repository
 
    ```bash
-   git clone
+   git clone git@github.com:Camillus83/ImageUploadAPI.git
    ```
 
 2. Install Docker and Docker Compose if not already installed
@@ -37,6 +37,9 @@ python manage.py createsuperuser
 8. Create some users and assign them roles
 
    Visit ``127.0.0.1:8000/admin`, create some users and assign them roles.
+   
+   ![image](https://user-images.githubusercontent.com/87909623/226049871-7301f359-029b-4886-8148-2c114e06d91e.png)
+
 
 ## Api Usage
 
@@ -50,6 +53,9 @@ GET /api/v1/images
 
 This will return a list of all the user's uploaded images, including the file name and thumbnail links of a different sizes based on the user's account plan.
 
+![image](https://user-images.githubusercontent.com/87909623/226050294-7c13286f-e43e-4f3e-bd3b-69d41100c776.png)
+
+
 ## Uploading an Image
 
 Users can upload an image using the following endpoint
@@ -57,6 +63,22 @@ Users can upload an image using the following endpoint
 ```bash
 POST /api/v1/images
 ```
+
+
+![image](https://user-images.githubusercontent.com/87909623/226050524-46d340da-eaf0-42d3-aae5-31ca4212a999.png)
+
+## 200px thumbnail preview
+
+![image](https://user-images.githubusercontent.com/87909623/226050631-dbd1c53c-b365-4f04-bf9e-7d8c25856387.png)
+
+## 400px thumbnail preview
+
+![image](https://user-images.githubusercontent.com/87909623/226050675-5089c284-3cbc-41c9-8962-a95afcebce2a.png)
+
+## Original image preview
+
+![image](https://user-images.githubusercontent.com/87909623/226050748-f8eed4af-a2a5-42b9-9619-be660fe5aeb4.png)
+
 
 ## Expiring Link to Image
 
@@ -75,6 +97,9 @@ In body user should specify time to expire, it should be between 300 and 30000 s
 ```
 
 That will return an expiring link for the specified image ID.
+
+![image](https://user-images.githubusercontent.com/87909623/226051178-2f72aacb-cfde-4d4b-9659-5c2c0462d3d2.png)
+
 
 ## Account Tiers
 
