@@ -39,8 +39,4 @@ class CustomUser(AbstractUser):
     If the role is not specified, default role is Basic.
     """
 
-    role = models.ForeignKey(
-        Role,
-        on_delete=models.PROTECT,
-        default=Role.objects.get(name="Basic")
-    )
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, null=True, blank=True)

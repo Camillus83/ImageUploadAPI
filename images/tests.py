@@ -81,14 +81,7 @@ class APITestCase(APITestCase):
         self.assertIn("200px_thumbnail", response.data)
         self.assertNotIn("400px_thumbnail", response.data)
         thumbnail_url = response.data["200px_thumbnail"]["url"]
-        print(response.data["200px_thumbnail"]["url"])
         thumbnail_response = self.client.get(thumbnail_url, format="multipart")
-        print(thumbnail_response.content)
-        thumbnail_200px_data = BytesIO(thumbnail_response.content)
-        thumbnail = PILImage.open(thumbnail_200px_data)
-        print(thumbnail)
-        width, height = thumbnail.size
-        # self.assertEqual(height, 200)
 
     def test_post_image_premium_user(self):
         self.client.login(username=self.premium_user.username, password="testpass123")

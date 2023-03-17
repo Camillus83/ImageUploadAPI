@@ -3,7 +3,7 @@ version: '2'
 services:
   web:
     build: .
-    command: python /code/manage.py runserver 0.0.0.0:8000
+    command: sh -c 'sleep 5 & python /code/manage.py runserver 0.0.0.0:8000' 
     volumes:
       - .:/code
     ports:
@@ -12,10 +12,13 @@ services:
       - db
     networks:
       - mynetwork
-    depends_on:
-      - db
+    restart: "on-failure:10"
+    environment:
+      - POSTGRES_HOST=db
   db:
     image: postgres:13
+    ports:
+      - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:

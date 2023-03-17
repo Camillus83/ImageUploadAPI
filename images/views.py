@@ -21,12 +21,6 @@ from .serializers import UserSerializer, ImageSerializer, ThumbnailSerializer
 from .utils import create_thumbnail
 from datetime import datetime, timedelta
 
-from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django.contrib.auth.decorators import login_required
-
 
 def image_preview_view(request, random_id):
     """
@@ -116,6 +110,21 @@ def create_expire_image_view(request, id):
 
 @api_view(["GET"])
 def expire_image_preview_view(request, random_id):
+    """
+    Retrieve an expiring image preview given its random ID.
+
+    This view receives a GET request with a `random_id` parameter that identifies
+    the expiring image to retrieve. If the image exists and its expiration time
+    has not passed yet, it returns an HTTP response with the image data and the
+    "image/jpeg" content type. If the image link has expired, it deletes the
+    expiring image object and returns an HTTP response with status code 410 Gone.
+
+    Parameters:
+    - `request`: The HTTP request object.
+    - `random_id` (str): The random ID that identifies the expiring image.
+      Returns:
+    - `HttpResponse` with the image data and content type, or status code 410 Gone.
+    """
     try:
         image = ExpiringImage.objects.get(
             url=f"http://127.0.0.1:8000/api/v1/exp/{random_id}"
@@ -168,99 +177,36 @@ def image_view(request, id):
     return Response(response_data)
 
 
-# @login_required
-# @api_view(["POST", "GET"])
-# @parser_classes([MultiPartParser, FormParser])
-# def images_view(request):
-#     """
-#     A view to create or retrieve user images.
+class ImageUploadView(generics.CreateAPIView, generics.ListAPIView):
+    """
+    API endpoint that allows authenticated users to upload images and
+    view their uploaded images and associated thumbnails.
 
-#     Args:
-#         request (Request): Django HTTP Request object.
-#     Returns:
-#         Response: Response with data about urls.
-#     """
-#     if request.method == "POST":
-#         serializer = ImageSerializer(data=request.data)
-#         serializer.is_valid(raise_exception =True)
-#         serializer.save(owner=request.user)
-#         image_file = request.data.get("image")
-#         user = request.user
+    A POST request with a valid JPEG or PNG image file to this endpoint
+    will create a new Image object associated with the authenticated user,
+    store the uploaded image file, create and store its thumbnails, and
+    return the URLs of the generated thumbnails and, if allowed by the user's
+    role, the URL of the original image.
 
-#         filename, extension = os.path.splitext(image_file.name)
-#         new_filename = f"{filename}_{user.username}{extension}"
+    A GET request to this endpoint will return a JSON object containing
+    information about all images uploaded by the authenticated user,
+    including their IDs, filenames, original URLs (if allowed), and URLs
+    of their thumbnails.
 
-#         if Image.objects.filter(file_name=image_file.name).exists():
-#             raise ValidationError("Image with the same name field already exists.")
+    Only authenticated users with a valid role are authorized to access this view.
+    """
 
-#         if not (
-#             image_file.content_type == "image/jpeg"
-#             or image_file.content_type == "image/png"
-#         ):
-#             raise ValidationError("Only JPEG and PNG image formats are supported.")
-
-#         image = Image(image_file=image_file, owner=user, file_name=new_filename)
-#         image.save()
-
-#         thumbnail_sizes = {
-#             "Basic": [Role.objects.get(name="Basic").thumbnail_size],
-#             "Premium": [
-#                 Role.objects.get(name="Basic").thumbnail_size,
-#                 Role.objects.get(name="Premium").thumbnail_size,
-#             ],
-#             "Enterprise": [
-#                 Role.objects.get(name="Basic").thumbnail_size,
-#                 Role.objects.get(name="Premium").thumbnail_size,
-#             ],
-#         }
-
-#         if user.role.name not in ["Basic", "Premium", "Enterprise"]:
-#             thumbnail_sizes[user.role.name] = [user.role.thumbnail_size]
-
-#         thumbnail_data = {}
-#         for size in thumbnail_sizes[user.role.name]:
-#             thumbnail = create_thumbnail(image, size)
-#             thumbnail_data[f"{size}px_thumbnail"] = ThumbnailSerializer(thumbnail).data
-
-#         if user.role.name == "Enterprise" or user.role.allow_original:
-#             thumbnail_data["original_image"] = ImageSerializer(image).data
-
-#         return Response(thumbnail_data)
-#     elif request.method == "GET":
-#         user = request.user
-#         images = Image.objects.filter(owner=user)
-#         response_data = {}
-#         for i, image in enumerate(images, start=1):
-
-#             thumbnail_data = {}
-#             thumbnails = image.thumbnails.all()
-#             for thumbnail in thumbnails:
-#                 thumbnail_data[f"{thumbnail.height}px_url"] = thumbnail.url
-#             if user.role.allow_original:
-#                 original_url = image.image_url
-#             else:
-#                 original_url = None
-#             response_data[f"image{i}"] = {
-#                 "image_id": image.pk,
-#                 "filename": image.file_name,
-#                 "original_url": original_url,
-#                 "thumbnails": thumbnail_data,
-#             }
-#         return Response(response_data)
-
-
-class ImageUploadView(generics.ListCreateAPIView):
+    queryset = Image.objects.none()
     parser_classes = (MultiPartParser, FormParser)
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
-        #serializer = ImageSerializer(data=request.data)
-        #serializer.is_valid(raise_exception=True)
-        #serializer.save(owner=request.user)
+    def create(self, request, *args, **kwargs):
         image_file = request.FILES.get("image_file")
 
         user = request.user
+        if user.role is None:
+            raise ValidationError("User should have an role.")
 
         filename, extension = os.path.splitext(image_file.name)
         new_filename = f"{filename}_{user.username}{extension}"
@@ -274,9 +220,7 @@ class ImageUploadView(generics.ListCreateAPIView):
         ):
             raise ValidationError("Only JPEG and PNG image formats are supported.")
 
-        image = Image(
-            image_file=image_file, owner=user, file_name=new_filename
-        )
+        image = Image(image_file=image_file, owner=user, file_name=new_filename)
         image.save()
 
         thumbnail_sizes = {
@@ -304,8 +248,10 @@ class ImageUploadView(generics.ListCreateAPIView):
 
         return Response(thumbnail_data)
 
-    def get(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):
         user = request.user
+        if user.role is None:
+            raise ValidationError("User should have an role.")
         images = Image.objects.filter(owner=user)
         response_data = {}
         for i, image in enumerate(images, start=1):
@@ -328,8 +274,12 @@ class ImageUploadView(generics.ListCreateAPIView):
 
 
 class UserViewSet(generics.ListAPIView):
+    """
+    A view that returns a list of all users in the system.
+
+    Users must be authenticated in order to access this view.
+    """
+
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
-
-

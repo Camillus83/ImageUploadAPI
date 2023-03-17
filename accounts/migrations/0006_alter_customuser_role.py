@@ -7,13 +7,18 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0005_alter_customuser_is_active'),
+        ("accounts", "0005_alter_customuser_is_active"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='customuser',
-            name='role',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='accounts.role'),
+            model_name="customuser",
+            name="role",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                to="accounts.role",
+            ),
         ),
     ]

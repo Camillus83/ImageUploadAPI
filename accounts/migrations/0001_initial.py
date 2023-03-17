@@ -7,6 +7,7 @@ import django.db.models.deletion
 import django.utils.timezone
 from accounts.models import Role
 
+
 def create_roles(apps, schema_editor):
     basic_role = Role.objects.create(
         name="Basic", thumbnail_size=200, allow_original=False, allow_expiring=False
@@ -28,12 +29,13 @@ def create_roles(apps, schema_editor):
     enterprise_role.save()
     custom_role.save()
 
+
 class Migration(migrations.Migration):
 
     initial = True
 
     dependencies = [
-        #("auth", "0012_alter_user_first_name_max_length"),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [

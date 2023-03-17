@@ -2,12 +2,11 @@ from django.urls import path
 from .views import (
     UserViewSet,
     image_preview_view,
-
     thumbnail_preview_view,
     image_view,
     create_expire_image_view,
     expire_image_preview_view,
-    ImageUploadView
+    ImageUploadView,
 )
 
 urlpatterns = [
